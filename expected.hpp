@@ -1,5 +1,4 @@
 #pragma once
-// minimum required c++ standard: C++17
 
 #if defined(__cplusplus) && __cplusplus >= 201703L || defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
 #include <type_traits>
@@ -56,7 +55,7 @@ class unexpected {
     static_assert(std::is_object_v<E>, "type `E` must be an object-type");
     static_assert(!std::is_array_v<E>, "type `E` can't be an array-type");
     static_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "cv qualifiers can't be applied to type `E`");
-    static_assert(!is_template_unexpected_instance_class_v<E>, "type `E` can't be an `unpected`");
+    static_assert(!is_template_unexpected_instance_class_v<E>, "type `E` can't be an `unexpected`");
 public:
     unexpected(const unexpected&) = default;
     unexpected(unexpected&&) = default;
@@ -101,12 +100,11 @@ unexpected(E) -> unexpected<E>;
 
 template<typename T, typename E>
 class expected {
-    static_assert(!std::is_array_v<T>, "type `T` can't be an array-type");
-    static_assert(!std::is_reference_v<T>, "type `T` can't be a reference-type");
-    static_assert(std::is_move_constructible_v<T>, "type `T` must be move-constructible");
+    static_assert(std::is_destructible_v<T>, "type `T` must be destructible");
     static_assert(std::is_object_v<E>, "type `E` must be an object-type");
     static_assert(!std::is_array_v<E>, "type `E` can't be an array-type");
     static_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "cv qualifiers can't be applied to type `E`");
+    static_assert(std::is_move_constructible_v<E>, "type `E` must be move-constructible");
 public:
     using value_type = T;
     using error_type = E;
@@ -318,28 +316,28 @@ public:
     }
 
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F, T&>>, E>>
-    auto transfrom(F&& f) & ->RetTy {
+    auto transform(F&& f) & ->RetTy {
         if (has_value())
             return std::forward<F>(f)(value());
         else
             return RetTy(unexpect, error());
     }
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F, const T&>>, E>>
-    auto transfrom(F&& f) const& ->RetTy {
+    auto transform(F&& f) const& ->RetTy {
         if (has_value())
             return std::forward<F>(f)(value());
         else
             return RetTy(unexpect, error());
     }
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F, T&&>>, E>>
-    auto transfrom(F&& f) && ->RetTy {
+    auto transform(F&& f) && ->RetTy {
         if (has_value())
             return std::forward<F>(f)(std::move(value()));
         else
             return RetTy(unexpect, std::move(error()));
     }
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F, const T&&>>, E>>
-    auto transfrom(F&& f) const&& ->RetTy {
+    auto transform(F&& f) const&& ->RetTy {
         if (has_value())
             return std::forward<F>(f)(std::move(value()));
         else
@@ -347,28 +345,28 @@ public:
     }
 
     template<typename F, typename RetTy = expected<T, remove_cvref_t<std::invoke_result_t<F, E&>>>>
-    auto transfrom_error(F&& f) & ->RetTy {
+    auto transform_error(F&& f) & ->RetTy {
         if (has_value())
             return value();
         else
             return RetTy(unexpect, std::forward<F>(f)(error()));
     }
     template<typename F, typename RetTy = expected<T, remove_cvref_t<std::invoke_result_t<F, const E&>>>>
-    auto transfrom_error(F&& f) const& ->RetTy {
+    auto transform_error(F&& f) const& ->RetTy {
         if (has_value())
             return value();
         else
             return RetTy(unexpect, std::forward<F>(f)(error()));
     }
     template<typename F, typename RetTy = expected<T, remove_cvref_t<std::invoke_result_t<F, E&&>>>>
-    auto transfrom_error(F&& f) && ->RetTy {
+    auto transform_error(F&& f) && ->RetTy {
         if (has_value())
             return std::move(value());
         else
             return RetTy(unexpect, std::forward<F>(f)(std::move(error())));
     }
     template<typename F, typename RetTy = expected<T, remove_cvref_t<std::invoke_result_t<F, const E&&>>>>
-    auto transfrom_error(F&& f) const&& ->RetTy {
+    auto transform_error(F&& f) const&& ->RetTy {
         if (has_value())
             return std::move(value());
         else
@@ -385,6 +383,7 @@ class expected<void, E> {
     static_assert(std::is_object_v<E>, "type `E` must be an object-type");
     static_assert(!std::is_array_v<E>, "type `E` can't be an array-type");
     static_assert(!std::is_const_v<E> && !std::is_volatile_v<E>, "cv qualifiers can't be applied to type `E`");
+    static_assert(std::is_move_constructible_v<E>, "type `E` must be move-constructible");
 public:
     using value_type = void;
     using error_type = E;
@@ -502,14 +501,14 @@ public:
     }
 
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F>>, E>>
-    auto transfrom(F&& f) const& ->RetTy {
+    auto transform(F&& f) const& ->RetTy {
         if (has_value())
             return std::forward<F>(f)();
         else
             return RetTy(unexpect, error());
     }
     template<typename F, typename RetTy = expected<remove_cvref_t<std::invoke_result_t<F>>, E>>
-    auto transfrom(F&& f) const&& ->RetTy {
+    auto transform(F&& f) const&& ->RetTy {
         if (has_value())
             return std::forward<F>(f)();
         else
@@ -517,28 +516,28 @@ public:
     }
 
     template<typename F, typename RetTy = expected<void, remove_cvref_t<std::invoke_result_t<F, E&>>>>
-    auto transfrom_error(F&& f) & ->RetTy {
+    auto transform_error(F&& f) & ->RetTy {
         if (has_value())
             return RetTy(in_place);
         else
             return RetTy(unexpect, std::forward<F>(f)(error()));
     }
     template<typename F, typename RetTy = expected<void, remove_cvref_t<std::invoke_result_t<F, const E&>>>>
-    auto transfrom_error(F&& f) const& ->RetTy {
+    auto transform_error(F&& f) const& ->RetTy {
         if (has_value())
             return RetTy(in_place);
         else
             return RetTy(unexpect, std::forward<F>(f)(error()));
     }
     template<typename F, typename RetTy = expected<void, remove_cvref_t<std::invoke_result_t<F, E&&>>>>
-    auto transfrom_error(F&& f) && ->RetTy {
+    auto transform_error(F&& f) && ->RetTy {
         if (has_value())
             return RetTy(in_place);
         else
             return RetTy(unexpect, std::forward<F>(f)(std::move(error())));
     }
     template<typename F, typename RetTy = expected<void, remove_cvref_t<std::invoke_result_t<F, const E&&>>>>
-    auto transfrom_error(F&& f) const&& ->RetTy {
+    auto transform_error(F&& f) const&& ->RetTy {
         if (has_value())
             return RetTy(in_place);
         else
