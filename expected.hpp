@@ -1,5 +1,7 @@
 #pragma once
 
+/// @author: ccat
+
 #if defined(__cplusplus) && __cplusplus >= 201703L || defined(_MSVC_LANG) && _MSVC_LANG >= 201703L
 #include <type_traits>
 #include <variant>
@@ -244,7 +246,9 @@ public:
         return &std::get<0>(context_);
     }
 
-	friend auto swap(expected&, expected&) noexcept ->void;
+    template<typename X, typename Y>
+    friend auto swap(expected<X, Y>&, expected<X, Y>&) noexcept ->void;
+
 	auto swap(expected& other)  noexcept ->void {
 		std::swap(context_, other.context_);
 	}
@@ -448,6 +452,10 @@ public:
     explicit operator bool() const noexcept {
         return has_value();
     }
+
+    template<typename X, typename Y>
+    friend auto swap(expected<X, Y>&, expected<X, Y>&) noexcept ->void;
+    
     auto swap(expected& other) noexcept ->void {
         return std::swap(context_, other.context_);
     }
